@@ -1,0 +1,9 @@
+{
+    "name": "tscab/hotel_payroll",
+    "autoload": {
+        "psr-4": {
+            "Tscab\\HotelPayroll\\": "src/"
+        }
+    },
+    "require": {}
+}
