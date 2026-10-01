@@ -2,6 +2,12 @@
 // 1. Connect to the database
 require_once 'config/db.php';
 
+$stmtCount = $conn->query("SELECT COUNT(*) as total_active FROM employees");
+$activeEmployees = $stmtCount->fetch(PDO::FETCH_ASSOC)['total_active'];
+
+$stmtList = $conn->query("SELECT * FROM employees ORDER BY id DESC LIMIT 5");
+$employeeList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
+
 // 2. Load the Bootstrap Header
 require_once 'includes/header.php';
 ?>
@@ -78,10 +84,10 @@ require_once 'includes/header.php';
                 <div class="col-md-4">
                     <div class="card card-stat bg-orange shadow-sm h-100 p-3">
                         <div class="card-body d-flex flex-column justify-content-center">
-                            <h2 class="fw-bold mb-0">12</h2>
-                            <p class="mb-0 fs-5">Active Employees</p>
-                        </div>
-                    </div>
+                            <h2 class="fw-bold mb-0"><?php echo $activeEmployees; ?></h2>
+                                <p class="mb-0 fs-5">Active Employees</p>
+                            </div>
+                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card card-stat bg-green shadow-sm h-100 p-3">
@@ -100,42 +106,41 @@ require_once 'includes/header.php';
                 <div class="col-md-8">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body p-4">
-                            <h5 class="fw-bold mb-4">Recent Salary Slips</h5>
-                            <div class="table-responsive">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                 <h5 class="fw-bold mb-0">Employee Roster</h5>
+                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal"> + Add Employee</button>
+                             </div>
+                        <div class="table-responsive">
                                 <table class="table table-hover align-middle">
-                                    <thead class="text-muted">
-                                        <tr>
-                                            <th>Employee</th>
-                                            <th>Pay Period</th>
-                                            <th>Net Salary</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="https://ui-avatars.com/api/?name=Tranks+Caballero&background=random" class="rounded-circle me-3" width="35">
-                                                    <span class="fw-bold">Tranks Caballero</span>
-                                                </div>
-                                            </td>
-                                            <td>Aug 01, 2026 - Aug 31, 2026</td>
-                                            <td class="fw-bold">₱ 39,000.00</td>
-                                            <td><button class="btn btn-sm btn-outline-primary">View Slip</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=random" class="rounded-circle me-3" width="35">
-                                                    <span class="fw-bold">Jane Doe</span>
-                                                </div>
-                                            </td>
-                                            <td>Aug 01, 2026 - Aug 31, 2026</td>
-                                            <td class="fw-bold">₱ 26,900.00</td>
-                                            <td><button class="btn btn-sm btn-outline-primary">View Slip</button></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+    <thead class="text-muted">
+        <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Daily Rate</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach($employeeList as $emp): ?>
+        <tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <!-- Automatically generates an avatar based on their name -->
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($emp['first_name'] . ' ' . $emp['last_name']); ?>&background=random" class="rounded-circle me-3" width="35">
+                    <span class="fw-bold"><?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?></span>
+                </div>
+            </td>
+            <td><?php echo htmlspecialchars($emp['department']); ?></td>
+            <td class="fw-bold">₱ <?php echo number_format($emp['basic_daily_rate'], 2); ?></td>
+            <td>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">
+                    <?php echo htmlspecialchars($emp['employment_status']); ?>
+                </span>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
                             </div>
                         </div>
                     </div>
@@ -165,7 +170,68 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<?php
 // 4. Load the Bootstrap Footer and Scripts
-require_once 'includes/footer.php';
-?>
+<!-- Add Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Register New Employee</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="controllers/add_employee.php" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Employees Code</label>
+                            <input type="text" name="employees_code" class="form-control" required placeholder="EMP-003">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hire Date</label>
+                            <input type="date" name="hire_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Department</label>
+                            <select name="department" class="form-select" required>
+                                <option value="Front Desk">Front Desk</option>
+                                <option value="Housekeeping">Housekeeping</option>
+                                <option value="Food & Beverage">Food & Beverage</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Management">Management</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Position</label>
+                            <input type="text" name="position" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select name="employment_status" class="form-select" required>
+                                <option value="Regular">Regular</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Contractual">Contractual</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Basic Daily Rate (₱)</label>
+                            <input type="number" step="0.01" name="basic_daily_rate" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php require_once 'includes/footer.php'; ?>
