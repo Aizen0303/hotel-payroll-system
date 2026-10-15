@@ -45,7 +45,7 @@ require_once 'includes/header.php';
             <a href="#" class="active"><i class="bi bi-grid-fill me-3"></i> Dashboard</a>
             <a href="#"><i class="bi bi-people-fill me-3"></i> Employees</a>
             <a href="pages/create_user.php"><i class="bi bi-person-badge-fill me-3"></i> Manage Users</a>
-            <a href="#"><i class="bi bi-calendar-check-fill me-3"></i> Attendance</a>
+            <a href="pages/attendance.php"><i class="bi bi-calendar-check-fill me-3"></i> Attendance</a>
             <a href="#"><i class="bi bi-wallet-fill me-3"></i> Payroll</a>
             <a href="#"><i class="bi bi-envelope-fill me-3"></i> Manage Leaves</a>
             <a href="#"><i class="bi bi-megaphone-fill me-3"></i> Announcements</a>
