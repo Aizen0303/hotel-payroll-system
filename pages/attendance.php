@@ -8,15 +8,20 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Fetch attendance records and JOIN with the employees table
+// 1. Determine which month to show (defaults to the current month, e.g., '2026-10')
+$filter_month = isset($_GET['month_filter']) ? $_GET['month_filter'] : date('Y-m');
+
+// 2. Fetch filtered attendance records 
 $sql = "SELECT a.*, e.first_name, e.last_name, e.department 
         FROM attendance a 
         JOIN employees e ON a.employee_id = e.id 
+        WHERE DATE_FORMAT(a.attendance_date, '%Y-%m') = :filter_month
         ORDER BY a.attendance_date DESC, a.time_in DESC";
-$stmt = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+$stmt->execute([':filter_month' => $filter_month]);
 $attendance_logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// NEW: Fetch employee list for the dropdown modal
+// 3. Fetch employee list for the Mark Attendance modal
 $empStmt = $conn->query("SELECT id, first_name, last_name FROM employees ORDER BY first_name ASC");
 $employeeList = $empStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -45,7 +50,17 @@ $employeeList = $empStmt->fetchAll(PDO::FETCH_ASSOC);
             </button>
         </div>
 
-        <div class="card p-4 shadow-lg">
+            <div class="card p-4 shadow-lg">
+            <!-- NEW: Month Filter Bar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0 text-light">Showing records for: <strong><?php echo date('F Y', strtotime($filter_month)); ?></strong></h6>
+                <form method="GET" class="d-flex gap-2">
+                    <input type="month" name="month_filter" class="form-control form-control-sm" style="background-color: #1a233a; color: #fff; border: 1px solid #3b476b;" value="<?php echo htmlspecialchars($filter_month); ?>" required>
+                    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                    <a href="attendance.php" class="btn btn-sm btn-outline-light">Clear</a>
+                </form>
+            </div>
+
             <table class="table table-hover">
                 <thead>
                     <tr>
