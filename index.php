@@ -1,4 +1,10 @@
 <?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: pages/login.php");
+    exit();
+}
 
 require_once 'config/db.php';
 
@@ -42,7 +48,7 @@ require_once 'includes/header.php';
             <a href="#"><i class="bi bi-wallet-fill me-3"></i> Payroll</a>
             <a href="#"><i class="bi bi-envelope-fill me-3"></i> Manage Leaves</a>
             <a href="#"><i class="bi bi-megaphone-fill me-3"></i> Announcements</a>
-            <a href="#" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-3"></i> Logout</a>
+            <a href="controllers/logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-3"></i> Logout</a>
         </div>
     </div>
 
