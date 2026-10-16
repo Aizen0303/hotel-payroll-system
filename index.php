@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
@@ -13,6 +14,45 @@ $activeEmployees = $stmtCount->fetch(PDO::FETCH_ASSOC)['total_active'];
 
 $stmtList = $conn->query("SELECT * FROM employees ORDER BY id DESC LIMIT 5");
 $employeeList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
+
+$today = date('Y-m-d');
+$leaveTodayStmt = $conn->prepare("
+    SELECT e.first_name, e.last_name, e.department 
+    FROM leave_requests l
+    JOIN employees e ON l.employee_id = e.id
+    WHERE l.leave_date = :today AND l.status = 'Approved'
+");
+$leaveTodayStmt->execute([':today' => $today]);
+$employeesOnLeave = $leaveTodayStmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+$empStmt = $conn->query("SELECT COUNT(id) FROM employees WHERE employment_status != 'Fired'");
+$activeEmployees = $empStmt->fetchColumn();
+
+
+$today = date('Y-m-d');
+$attStmt = $conn->prepare("SELECT COUNT(DISTINCT employee_id) FROM attendance WHERE attendance_date = :today AND status IN ('Present', 'Late')");
+$attStmt->execute([':today' => $today]);
+$todayAttendance = $attStmt->fetchColumn();
+
+
+$attendancePercentage = $activeEmployees > 0 ? round(($todayAttendance / $activeEmployees) * 100) : 0;
+
+$currentMonth = date('Y-m');
+$paySql = "SELECT e.id, e.basic_daily_rate,
+           (SELECT COUNT(id) FROM attendance WHERE employee_id = e.id AND status IN ('Present', 'Late', 'On Leave') AND DATE_FORMAT(attendance_date, '%Y-%m') = :month) as days_worked,
+           (SELECT COUNT(id) FROM attendance WHERE employee_id = e.id AND status = 'Late' AND DATE_FORMAT(attendance_date, '%Y-%m') = :month) as days_late,
+           (SELECT COALESCE(amount, 0) FROM bonuses WHERE employee_id = e.id AND bonus_month = :month) as bonus
+    FROM employees e";
+$payStmt = $conn->prepare($paySql);
+$payStmt->execute([':month' => $currentMonth]);
+$payData = $payStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$totalPayrollThisMonth = 0;
+foreach($payData as $p) {
+    $net = ($p['basic_daily_rate'] * $p['days_worked']) + $p['bonus'] - ($p['days_late'] * 100);
+    $totalPayrollThisMonth += $net;
+}
 
 
 require_once 'includes/header.php';
@@ -36,7 +76,7 @@ require_once 'includes/header.php';
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<div class="d-flex">
+<div class="d-flex w-100">
     <div class="sidebar flex-shrink-0 shadow">
         <div class="brand d-flex align-items-center">
             <i class="bi bi-buildings-fill me-2 fs-4 text-primary"></i> Hotel Payroll
@@ -48,7 +88,7 @@ require_once 'includes/header.php';
             <a href="pages/attendance.php"><i class="bi bi-calendar-check-fill me-3"></i> Attendance</a>
             <a href="pages/payroll.php"><i class="bi bi-wallet2 me-3"></i> Payroll</a>
             <a href="pages/manage_leaves.php"><i class="bi bi-envelope-fill me-3"></i> Manage Leaves</a>
-            <a href="#"><i class="bi bi-megaphone-fill me-3"></i> Announcements</a>
+            <a href="pages/announcements.php"><i class="bi bi-megaphone-fill me-3"></i> Announcements</a>
             <a href="controllers/logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-3"></i> Logout</a>
         </div>
     </div>
@@ -69,33 +109,30 @@ require_once 'includes/header.php';
             <h3 class="fw-bold mb-1 text-dark">Dashboard</h3>
             <p class="text-muted mb-4">Welcome back, Admin!</p>
 
-            <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="card card-stat bg-purple shadow-sm h-100 p-3">
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <h2 class="fw-bold mb-0">100%</h2>
-                            <p class="mb-0 fs-5">Today's Attendance</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card card-stat bg-orange shadow-sm h-100 p-3">
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <h2 class="fw-bold mb-0"><?php echo $activeEmployees; ?></h2>
-                                <p class="mb-0 fs-5">Active Employees</p>
-                            </div>
-                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card card-stat bg-green shadow-sm h-100 p-3">
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <h2 class="fw-bold mb-0">₱ 145,000.00</h2>
-                            <p class="mb-0 fs-5">Payroll This Month</p>
-                        </div>
-                    </div>
+        <div class="row g-4 mb-4">
+            
+            <div class="col-md-4">
+                <div class="card p-4 text-white shadow-sm" style="background-color: #8b5cf6; border-radius: 10px;">
+                    <h2><?php echo $attendancePercentage; ?>%</h2>
+                    <p class="m-0">Today's Attendance</p>
                 </div>
             </div>
 
+            <div class="col-md-4">
+                <div class="card p-4 text-white shadow-sm" style="background-color: #f97316; border-radius: 10px;">
+                    <h2><?php echo $activeEmployees; ?></h2>
+                    <p class="m-0">Active Employees</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-4 text-white shadow-sm" style="background-color: #22c55e; border-radius: 10px;">
+                    <h2>₱ <?php echo number_format($totalPayrollThisMonth, 2); ?></h2>
+                    <p class="m-0">Payroll This Month</p>
+                </div>
+            </div>
+            
+        </div> 
         
             <div class="row g-4">
                 
@@ -149,7 +186,6 @@ require_once 'includes/header.php';
                 </form>
             </div>
 
-            <!-- Edit Employee Modal (Generated for each employee) -->
             <div class="modal fade" id="editEmployeeModal<?php echo $emp['id']; ?>" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -208,19 +244,30 @@ require_once 'includes/header.php';
                 </div>
 
        
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body p-4">
-                            <h5 class="fw-bold mb-4">On Leave Today</h5>
-                            
-                            <div class="d-flex align-items-center mb-4">
-                                <img src="https://ui-avatars.com/api/?name=Mark+Smith&background=random" class="rounded-circle me-3" width="40">
-                                <div>
-                                    <p class="mb-0 fw-bold">Mark Smith</p>
-                                    <small class="text-muted">Housekeeping</small>
-                                </div>
-                                <span class="badge bg-warning text-dark ms-auto border rounded-pill px-3 py-2">Leave</span>
-                            </div>
+              <!-- On Leave Today Widget -->
+<div class="card p-4 border-0 shadow-sm h-100" style="border-radius: 10px;">
+    <h5 class="fw-bold mb-4 text-dark">On Leave Today</h5>
+    
+    <?php if (count($employeesOnLeave) > 0): ?>
+        <?php foreach ($employeesOnLeave as $leaveEmp): ?>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <!-- Automatically generate the initials from their first and last name -->
+                    <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
+                        <?php echo strtoupper(substr($leaveEmp['first_name'], 0, 1) . substr($leaveEmp['last_name'], 0, 1)); ?>
+                    </div>
+                    <div>
+                        <h6 class="m-0 fw-bold text-dark"><?php echo htmlspecialchars($leaveEmp['first_name'] . ' ' . $leaveEmp['last_name']); ?></h6>
+                        <small class="text-muted"><?php echo htmlspecialchars($leaveEmp['department']); ?></small>
+                    </div>
+                </div>
+                <span class="badge bg-warning text-dark">Leave</span>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p class="text-muted text-center py-4">No employees on leave today.</p>
+    <?php endif; ?>
+</div>
 
                         </div>
                     </div>

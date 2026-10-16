@@ -9,15 +9,12 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $filter_month = isset($_GET['month_filter']) ? $_GET['month_filter'] : date('Y-m');
-
-// Core Payroll Engine: Now counts both Present and Late as worked days, and isolates Late days for deductions
 $sql = "SELECT e.id, e.first_name, e.last_name, e.department, e.basic_daily_rate,
-               (SELECT COUNT(id) FROM attendance WHERE employee_id = e.id AND status IN ('Present', 'Late') AND DATE_FORMAT(attendance_date, '%Y-%m') = :filter_month) as days_worked,
+               (SELECT COUNT(id) FROM attendance WHERE employee_id = e.id AND status IN ('Present', 'Late', 'On Leave') AND DATE_FORMAT(attendance_date, '%Y-%m') = :filter_month) as days_worked,
                (SELECT COUNT(id) FROM attendance WHERE employee_id = e.id AND status = 'Late' AND DATE_FORMAT(attendance_date, '%Y-%m') = :filter_month) as days_late,
                (SELECT COALESCE(amount, 0) FROM bonuses WHERE employee_id = e.id AND bonus_month = :filter_month) as bonus
         FROM employees e
         ORDER BY e.first_name ASC";
-
 $stmt = $conn->prepare($sql);
 $stmt->execute([':filter_month' => $filter_month]);
 $payroll_data = $stmt->fetchAll(PDO::FETCH_ASSOC);

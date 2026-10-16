@@ -11,8 +11,8 @@
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
+        <div class="container-fluid px-0">
             <a class="navbar-brand" href="#">Hotel Payroll System</a>
         </div>
     </nav>
-    <div class="container">
+   <div class="container-fluid px-0">
