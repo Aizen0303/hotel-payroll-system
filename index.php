@@ -47,7 +47,7 @@ require_once 'includes/header.php';
             <a href="pages/create_user.php"><i class="bi bi-person-badge-fill me-3"></i> Manage Users</a>
             <a href="pages/attendance.php"><i class="bi bi-calendar-check-fill me-3"></i> Attendance</a>
             <a href="pages/payroll.php"><i class="bi bi-wallet2 me-3"></i> Payroll</a>
-            <a href="#"><i class="bi bi-envelope-fill me-3"></i> Manage Leaves</a>
+            <a href="pages/manage_leaves.php"><i class="bi bi-envelope-fill me-3"></i> Manage Leaves</a>
             <a href="#"><i class="bi bi-megaphone-fill me-3"></i> Announcements</a>
             <a href="controllers/logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-3"></i> Logout</a>
         </div>
