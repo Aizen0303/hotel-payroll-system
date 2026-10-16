@@ -110,9 +110,10 @@ $payroll_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <td class="text-info">+ ₱ <?php echo number_format($bonus, 2); ?></td>
                                 <td class="net-highlight">₱ <?php echo number_format($net_salary, 2); ?></td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#bonusModal<?php echo $emp['id']; ?>">
-                                        Set Bonus
-                                    </button>
+                                   <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#bonusModal<?php echo $emp['id']; ?>">
+                                    Set Bonus </button>
+                                    <a href="payslip.php?id=<?php echo $emp['id']; ?>&month=<?php echo urlencode($filter_month); ?>" class="btn btn-sm btn-outline-success ms-1" target="_blank">
+                                    <i class="bi bi-receipt"></i> Payslip </a>
                                 </td>
                             </tr>
 
